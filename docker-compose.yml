@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  stock_app:
+    build: .
+    container_name: stock_app
+    ports:
+      - "8501:8501"
+      - "4041:4040"
+    volumes:
+      - ./workspace:/app/workspace
+    env_file:
+      - .env
+    depends_on:
+      - ngrok
+    command: ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+  jupyterlab:
+    image: jupyter/base-notebook:latest
+    container_name: jupyterlab
+    ports:
+      - 8888:8888
+    volumes:
+      - ./workspace:/home/jovyan/work
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+      GRANT_SUDO: "yes"
+      JUPYTER_TOKEN: ""
+    command: "start-notebook.sh --NotebookApp.token=''"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    restart: unless-stopped
+    command: http stock_app:8501 --log=stdout
+    ports:
+      - 4040:4040
+    env_file:
+      - .env

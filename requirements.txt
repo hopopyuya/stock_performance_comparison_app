@@ -1,0 +1,8 @@
+streamlit
+pandas
+seaborn
+yfinance
+matplotlib
+japanize_matplotlib
+requests
+jupyterlab
