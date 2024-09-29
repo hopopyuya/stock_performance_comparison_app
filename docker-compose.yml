@@ -32,7 +32,7 @@ services:
     image: ngrok/ngrok:latest
     container_name: ngrok
     restart: unless-stopped
-    command: http stock_app:8501 --log=stdout
+    command: http --domain=magnetic-moccasin-fresh.ngrok-free.app stock_app:8501 --log=stdout
     ports:
       - 4040:4040
     env_file:

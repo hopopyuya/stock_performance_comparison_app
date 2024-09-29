@@ -31,7 +31,7 @@ with col1:
     selected_stock_names = st.multiselect(
         "銘柄を選択してください",
         options=stock_names_df['name'],
-        default=[stock_names_df['name'][0]] if not stock_names_df.empty else None
+        default=['トヨタ自'] if 'トヨタ自' in stock_names_df['name'].values else stock_names_df['name'][0]
     )
 
 with col2:
