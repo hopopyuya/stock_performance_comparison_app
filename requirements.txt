@@ -6,3 +6,7 @@ matplotlib
 japanize_matplotlib
 requests
 jupyterlab
+pyarrow
+google-cloud-bigquery
+google-cloud-storage
+db-dtypes

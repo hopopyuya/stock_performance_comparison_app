@@ -9,6 +9,7 @@ services:
       - "4041:4040"
     volumes:
       - ./workspace:/app/workspace
+      - ./workspace/.streamlit:/app/workspace/.streamlit # secrets.tomlをマウントする
     env_file:
       - .env
     depends_on:

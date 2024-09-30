@@ -1,17 +1,21 @@
+import subprocess
+import sys
+import os
 import streamlit as st
 import pandas as pd
 import seaborn as sns
-import yfinance as yf
+from google.cloud import bigquery
+from google.oauth2 import service_account
 import matplotlib.pyplot as plt
 import japanize_matplotlib
-import requests
-from io import StringIO
 import datetime as dt
+import json
+import db_dtypes
 
 # ページの設定
 st.set_page_config(
     page_title="stock_performance_comparison",
-    layout="wide",  # "wide" レイアウトを維持
+    layout="wide",
 )
 
 # タイトルの表示
@@ -31,7 +35,7 @@ with col1:
     selected_stock_names = st.multiselect(
         "銘柄を選択してください",
         options=stock_names_df['name'],
-        default=['トヨタ自'] if 'トヨタ自' in stock_names_df['name'].values else stock_names_df['name'][0]
+        default=['トヨタ自'] if 'トヨタ自' in stock_names_df['name'].values else [stock_names_df['name'].iloc[0]]
     )
 
 with col2:
@@ -53,132 +57,187 @@ selected_stock_codes = stock_names_df[stock_names_df['name'].isin(selected_stock
 if not selected_stock_codes:
     st.warning("銘柄を選択してください。")
 else:
-    # yfinanceで株価データを取得する関数
-    @st.cache_data
-    def get_stock_data(ticker, start, end):
+    # BigQueryクライアントの初期化
+    @st.cache_resource
+    def get_bigquery_client():
         try:
-            df = yf.download(ticker, start=start, end=end)
-            if df.empty:
-                st.warning(f"{ticker} のデータが見つかりませんでした。")
-                return None
-            df.reset_index(inplace=True)
-            df.sort_values('Date', inplace=True)
-            return df
+            # 認証情報をsecretsから読み込み
+            service_account_info = st.secrets["gcp_service_account"]
+            credentials = service_account.Credentials.from_service_account_info(service_account_info)
+            client = bigquery.Client(credentials=credentials, project=service_account_info["project_id"])
+            return client
         except Exception as e:
-            st.error(f"{ticker} のデータ取得中にエラーが発生しました: {e}")
+            st.error(f"認証情報の読み込み中にエラーが発生しました: {e}")
             return None
 
-    # 選択された銘柄のデータを取得
-    dfs = []
-    for code in selected_stock_codes:
-        ticker = f"{code}.T"
-        df = get_stock_data(ticker, start_date, end_date)
-        if df is not None:
-            # 最初の日付のクローズ価格を取得
-            first_date = df['Date'].min()
-            standard_value = df.loc[df['Date'] == first_date, 'Close'].iloc[0]
-            # 正規化したクローズ価格を計算
-            df[f'{code}'] = (df['Close'] / standard_value) * 100
-            # 必要な列だけを抽出
-            dfs.append(df[['Date', f'{code}']])
+    client = get_bigquery_client()
 
-    if not dfs:
-        st.error("選択された銘柄のデータが取得できませんでした。")
+    if client is None:
+        st.error("BigQueryクライアントの初期化に失敗しました。")
     else:
-        # データフレームのマージ
-        output_df = dfs[0]
-        for df in dfs[1:]:
-            output_df = pd.merge(output_df, df, on='Date', how='inner')
+        # BigQueryからデータを取得する関数
+        @st.cache_data
+        def get_stock_data_from_bq(codes, start, end):
+            try:
+                # クエリの作成
+                query = """
+                    SELECT Date, Stock_Code, Open, High, Low, Close, Adj_Close, Volume
+                    FROM `dbt-analytics-engineer-435907.stock_dataset.stock_data`
+                    WHERE Stock_Code IN UNNEST(@codes)
+                      AND CAST(Date AS DATE) BETWEEN @start_date AND @end_date
+                    ORDER BY Date ASC
+                """
+                # クエリジョブの設定
+                job_config = bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ArrayQueryParameter("codes", "STRING", codes),
+                        bigquery.ScalarQueryParameter("start_date", "DATE", start),
+                        bigquery.ScalarQueryParameter("end_date", "DATE", end),
+                    ]
+                )
+                # クエリの実行
+                query_job = client.query(query, job_config=job_config)
+                df = query_job.to_dataframe()
+                if df.empty:
+                    st.warning("指定された条件に合致するデータが存在しません。")
+                    return None
+                # 日付の形式を確認・変換
+                if df['Date'].dtype == 'object':
+                    df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
+                elif pd.api.types.is_datetime64_any_dtype(df['Date']):
+                    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+                return df
+            except Exception as e:
+                st.error(f"BigQueryからのデータ取得中にエラーが発生しました: {e}")
+                return None
 
-        # データを「長い形式」に変換
-        output_df_melted = output_df.melt(id_vars='Date', var_name='Stock_Code', value_name='Normalized_Close')
+        # 選択された銘柄のデータを取得
+        df_bq = get_stock_data_from_bq(selected_stock_codes, start_date, end_date)
 
-        # 株コードと銘柄名のマッピング
-        code_to_name = dict(zip(stock_names_df['code'].astype(str), stock_names_df['name']))
-        output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
+        if df_bq is None:
+            st.error("選択された銘柄のデータが取得できませんでした。")
+        else:
+            # 各銘柄のデータを正規化
+            dfs = []
+            for code in selected_stock_codes:
+                df = df_bq[df_bq['Stock_Code'] == code].copy()
+                if df.empty:
+                    st.warning(f"{code} のデータが存在しません。")
+                    continue
+                # 最初の日付のクローズ価格を取得
+                first_date = df['Date'].min()
+                standard_value = df.loc[df['Date'] == first_date, 'Close'].iloc[0]
+                # 正規化したクローズ価格を計算
+                df[f'{code}'] = (df['Close'] / standard_value) * 100
+                # 必要な列だけを抽出
+                dfs.append(df[['Date', f'{code}']])
 
-        # マッピングに失敗した場合の処理
-        missing_names = output_df_melted[output_df_melted['Stock_Name'].isna()]['Stock_Code'].unique()
-        if len(missing_names) > 0:
-            st.warning(f"以下の株コードの銘柄名がマッピングされていません: {missing_names}")
-            for code in missing_names:
-                code_to_name[code] = code  # 例として株コードをそのまま使用
-            output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
+            if not dfs:
+                st.error("選択された銘柄のデータが取得できませんでした。")
+            else:
+                # データフレームのマージ
+                output_df = dfs[0]
+                for df in dfs[1:]:
+                    output_df = pd.merge(output_df, df, on='Date', how='inner')
 
-        # 背景色を定義
-        BG_COLOR = '#0E1117'
-        # プロットの作成
-        plt.figure(figsize=(14, 7), facecolor=BG_COLOR)  # フィギュアの背景色を設定
+                # データを「長い形式」に変換
+                output_df_melted = output_df.melt(id_vars='Date', var_name='Stock_Code', value_name='Normalized_Close')
 
-        # Seabornのスタイルをカスタマイズ
-        sns.set_style("darkgrid", {
-            "axes.facecolor": BG_COLOR,      # 軸の背景色
-            "figure.facecolor": BG_COLOR,    # フィギュアの背景色
-            "grid.color": "#444444"           # グリッドの色
-        })
+                # 株コードと銘柄名のマッピング
+                code_to_name = dict(zip(stock_names_df['code'].astype(str), stock_names_df['name']))
+                output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
 
-        # 日本語フォントを適用
-        japanize_matplotlib.japanize()
+                # マッピングに失敗した場合の処理
+                missing_names = output_df_melted[output_df_melted['Stock_Name'].isna()]['Stock_Code'].unique()
+                if len(missing_names) > 0:
+                    st.warning(f"以下の株コードの銘柄名がマッピングされていません: {missing_names}")
+                    for code in missing_names:
+                        code_to_name[code] = code  # 例として株コードをそのまま使用
+                    output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
 
-        # Seabornのコンテキストとスタイルを設定
-        sns.set_context("notebook", font_scale=1.2)  # フォントスケールを調整
+                # データの取得後にDateカラムをdatetime型に変換
+                if df_bq['Date'].dtype == 'object':
+                    df_bq['Date'] = pd.to_datetime(df_bq['Date'])
+                elif pd.api.types.is_datetime64_any_dtype(df_bq['Date']):
+                    df_bq['Date'] = pd.to_datetime(df_bq['Date'])
+                
+                # output_df_meltedにも同様の変換
+                output_df_melted['Date'] = pd.to_datetime(output_df_melted['Date'])
 
-        # ラインプロットを作成
-        sns.lineplot(
-            data=output_df_melted,
-            x='Date',
-            y='Normalized_Close',
-            hue='Stock_Name',
-            marker='o',
-            palette='bright'  # 明るい色のパレットを使用
-        )
+                # 背景色を定義
+                BG_COLOR = '#0E1117'
+                # プロットの作成
+                plt.figure(figsize=(14, 7), facecolor=BG_COLOR)  # フィギュアの背景色を設定
 
-        # 100%の水平線を追加
-        plt.axhline(y=100, color='white', linestyle='--', linewidth=1, alpha=0.7, label='基準値 (100%)')
+                # Seabornのスタイルをカスタマイズ
+                sns.set_style("darkgrid", {
+                    "axes.facecolor": BG_COLOR,      # 軸の背景色
+                    "figure.facecolor": BG_COLOR,    # フィギュアの背景色
+                    "grid.color": "#444444"           # グリッドの色
+                })
 
-        # タイトルとラベルの設定
-        plt.title('stock_performance_comparison', color='white', fontsize=18)
-        plt.xlabel('date', color='white', fontsize=16)
-        plt.ylabel('stock_price_performance (%)', color='white', fontsize=16)
+                # 日本語フォントを適用
+                japanize_matplotlib.japanize()
 
-        # 現在の軸を取得
-        ax = plt.gca()
+                # Seabornのコンテキストとスタイルを設定
+                sns.set_context("notebook", font_scale=1.2)  # フォントスケールを調整
 
-        # 軸の背景色を黒に設定
-        ax.set_facecolor(BG_COLOR)
+                # ラインプロットを作成
+                sns.lineplot(
+                    data=output_df_melted,
+                    x='Date',
+                    y='Normalized_Close',
+                    hue='Stock_Name',
+                    marker='o',
+                    palette='bright'  # 明るい色のパレットを使用
+                )
 
-        # スパイン（枠線）の色を白に設定
-        for spine in ax.spines.values():
-            spine.set_edgecolor('white')
+                # 100%の水平線を追加
+                plt.axhline(y=100, color='white', linestyle='--', linewidth=1, alpha=0.7, label='基準値 (100%)')
 
-        # 目盛りの色を白に設定
-        ax.tick_params(colors='white', which='both')
+                # タイトルとラベルの設定
+                plt.title('stock_performance_comparison', color='white', fontsize=18)
+                plt.xlabel('date', color='white', fontsize=16)
+                plt.ylabel('stock_price_performance (%)', color='white', fontsize=16)
 
-        # X軸とY軸の目盛りラベルの色も白に設定
-        for label in ax.get_xticklabels() + ax.get_yticklabels():
-            label.set_color('white')
+                # 現在の軸を取得
+                ax = plt.gca()
 
-        # 凡例の設定（フォントサイズを大きく）
-        legend = plt.legend(
-            title='銘柄名',
-            bbox_to_anchor=(1.05, 1),
-            loc='upper left',
-            fontsize=18,          # 凡例項目のフォントサイズ
-            title_fontsize=20     # 凡例タイトルのフォントサイズ
-        )
-        for text in legend.get_texts():
-            text.set_color("white")
-        legend.get_title().set_color("white")
+                # 軸の背景色を黒に設定
+                ax.set_facecolor(BG_COLOR)
 
-        # X軸の目盛りを45度回転
-        plt.xticks(rotation=45, color='white')
+                # スパイン（枠線）の色を白に設定
+                for spine in ax.spines.values():
+                    spine.set_edgecolor('white')
 
-        # レイアウトを調整して余白を最小化
-        plt.tight_layout()
+                # 目盛りの色を白に設定
+                ax.tick_params(colors='white', which='both')
 
-        # グラフをStreamlitに表示
-        st.pyplot(plt, facecolor=BG_COLOR)
+                # X軸とY軸の目盛りラベルの色も白に設定
+                for label in ax.get_xticklabels() + ax.get_yticklabels():
+                    label.set_color('white')
 
-        # 図を閉じてメモリを解放
-        plt.clf()
-        plt.close()
+                # 凡例の設定（フォントサイズを大きく）
+                legend = plt.legend(
+                    title='銘柄名',
+                    bbox_to_anchor=(1.05, 1),
+                    loc='upper left',
+                    fontsize=18,          # 凡例項目のフォントサイズ
+                    title_fontsize=20     # 凡例タイトルのフォントサイズ
+                )
+                for text in legend.get_texts():
+                    text.set_color("white")
+                legend.get_title().set_color("white")
+
+                # X軸の目盛りを45度回転
+                plt.xticks(rotation=45, color='white')
+
+                # レイアウトを調整して余白を最小化
+                plt.tight_layout()
+
+                # グラフをStreamlitに表示
+                st.pyplot(plt, facecolor=BG_COLOR)
+
+                # 図を閉じてメモリを解放
+                plt.clf()
+                plt.close()
