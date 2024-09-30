@@ -4,3 +4,4 @@
 __pycache__
 dbt-analytics-engineer-435907-75a25995915e.json
 /.streamlit/secrets.toml
+*.parquet
