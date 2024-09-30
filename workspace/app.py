@@ -81,11 +81,11 @@ else:
             try:
                 # クエリの作成
                 query = """
-                    SELECT Date, Stock_Code, Open, High, Low, Close, Adj_Close, Volume
-                    FROM `dbt-analytics-engineer-435907.stock_dataset.stock_data`
-                    WHERE Stock_Code IN UNNEST(@codes)
-                      AND CAST(Date AS DATE) BETWEEN @start_date AND @end_date
-                    ORDER BY Date ASC
+                    SELECT date, stock_code, close
+                    FROM `dbt-analytics-engineer-435907.stock_dataset.fct_stock_data`
+                    WHERE stock_code IN UNNEST(@codes)
+                      AND date BETWEEN @start_date AND @end_date
+                    ORDER BY date ASC
                 """
                 # クエリジョブの設定
                 job_config = bigquery.QueryJobConfig(
@@ -101,11 +101,7 @@ else:
                 if df.empty:
                     st.warning("指定された条件に合致するデータが存在しません。")
                     return None
-                # 日付の形式を確認・変換
-                if df['Date'].dtype == 'object':
-                    df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
-                elif pd.api.types.is_datetime64_any_dtype(df['Date']):
-                    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+      
                 return df
             except Exception as e:
                 st.error(f"BigQueryからのデータ取得中にエラーが発生しました: {e}")
@@ -120,17 +116,17 @@ else:
             # 各銘柄のデータを正規化
             dfs = []
             for code in selected_stock_codes:
-                df = df_bq[df_bq['Stock_Code'] == code].copy()
+                df = df_bq[df_bq['stock_code'] == code].copy()
                 if df.empty:
                     st.warning(f"{code} のデータが存在しません。")
                     continue
                 # 最初の日付のクローズ価格を取得
-                first_date = df['Date'].min()
-                standard_value = df.loc[df['Date'] == first_date, 'Close'].iloc[0]
+                first_date = df['date'].min()
+                standard_value = df.loc[df['date'] == first_date, 'close'].iloc[0]
                 # 正規化したクローズ価格を計算
-                df[f'{code}'] = (df['Close'] / standard_value) * 100
+                df[f'{code}'] = (df['close'] / standard_value) * 100
                 # 必要な列だけを抽出
-                dfs.append(df[['Date', f'{code}']])
+                dfs.append(df[['date', f'{code}']])
 
             if not dfs:
                 st.error("選択された銘柄のデータが取得できませんでした。")
@@ -138,31 +134,22 @@ else:
                 # データフレームのマージ
                 output_df = dfs[0]
                 for df in dfs[1:]:
-                    output_df = pd.merge(output_df, df, on='Date', how='inner')
+                    output_df = pd.merge(output_df, df, on='date', how='inner')
 
                 # データを「長い形式」に変換
-                output_df_melted = output_df.melt(id_vars='Date', var_name='Stock_Code', value_name='Normalized_Close')
+                output_df_melted = output_df.melt(id_vars='date', var_name='stock_code', value_name='normalized_close')
 
                 # 株コードと銘柄名のマッピング
                 code_to_name = dict(zip(stock_names_df['code'].astype(str), stock_names_df['name']))
-                output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
+                output_df_melted['stock_name'] = output_df_melted['stock_code'].map(code_to_name)
 
                 # マッピングに失敗した場合の処理
-                missing_names = output_df_melted[output_df_melted['Stock_Name'].isna()]['Stock_Code'].unique()
+                missing_names = output_df_melted[output_df_melted['stock_name'].isna()]['stock_code'].unique()
                 if len(missing_names) > 0:
                     st.warning(f"以下の株コードの銘柄名がマッピングされていません: {missing_names}")
                     for code in missing_names:
                         code_to_name[code] = code  # 例として株コードをそのまま使用
-                    output_df_melted['Stock_Name'] = output_df_melted['Stock_Code'].map(code_to_name)
-
-                # データの取得後にDateカラムをdatetime型に変換
-                if df_bq['Date'].dtype == 'object':
-                    df_bq['Date'] = pd.to_datetime(df_bq['Date'])
-                elif pd.api.types.is_datetime64_any_dtype(df_bq['Date']):
-                    df_bq['Date'] = pd.to_datetime(df_bq['Date'])
-                
-                # output_df_meltedにも同様の変換
-                output_df_melted['Date'] = pd.to_datetime(output_df_melted['Date'])
+                    output_df_melted['stock_name'] = output_df_melted['stock_code'].map(code_to_name)
 
                 # 背景色を定義
                 BG_COLOR = '#0E1117'
@@ -185,9 +172,9 @@ else:
                 # ラインプロットを作成
                 sns.lineplot(
                     data=output_df_melted,
-                    x='Date',
-                    y='Normalized_Close',
-                    hue='Stock_Name',
+                    x='date',
+                    y='normalized_close',
+                    hue='stock_name',
                     marker='o',
                     palette='bright'  # 明るい色のパレットを使用
                 )
