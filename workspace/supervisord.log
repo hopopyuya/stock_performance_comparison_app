@@ -3139,3 +3139,71 @@
 2024-09-30 10:00:46,522 INFO spawned: 'ngrok' with pid 103
 2024-09-30 10:00:47,490 WARN exited: ngrok (exit status 1; not expected)
 2024-09-30 10:00:48,498 INFO gave up: ngrok entered FATAL state, too many start retries too quickly
+2024-09-30 12:04:23,847 WARN received SIGTERM indicating exit request
+2024-09-30 12:04:23,853 INFO waiting for jupyterlab, streamlit to die
+2024-09-30 12:04:25,367 INFO stopped: streamlit (exit status 0)
+2024-09-30 12:04:26,666 INFO stopped: jupyterlab (exit status 0)
+2024-09-30 12:04:44,096 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2024-09-30 12:04:44,102 INFO supervisord started with pid 1
+2024-09-30 12:04:45,110 INFO spawned: 'jupyterlab' with pid 7
+2024-09-30 12:04:45,123 INFO spawned: 'ngrok' with pid 8
+2024-09-30 12:04:45,127 INFO spawned: 'streamlit' with pid 9
+2024-09-30 12:04:46,234 INFO success: jupyterlab entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:46,236 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:46,237 INFO success: streamlit entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:46,618 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:47,635 INFO spawned: 'ngrok' with pid 24
+2024-09-30 12:04:48,632 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:48,657 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:49,662 INFO spawned: 'ngrok' with pid 35
+2024-09-30 12:04:50,666 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:50,681 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:51,692 INFO spawned: 'ngrok' with pid 45
+2024-09-30 12:04:52,684 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:52,704 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:53,715 INFO spawned: 'ngrok' with pid 56
+2024-09-30 12:04:54,715 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:54,724 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:55,737 INFO spawned: 'ngrok' with pid 66
+2024-09-30 12:04:56,712 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:57,722 INFO spawned: 'ngrok' with pid 76
+2024-09-30 12:04:58,754 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:04:58,768 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:04:59,783 INFO spawned: 'ngrok' with pid 89
+2024-09-30 12:05:00,730 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:01,740 INFO spawned: 'ngrok' with pid 100
+2024-09-30 12:05:02,723 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:04,731 INFO spawned: 'ngrok' with pid 111
+2024-09-30 12:05:05,909 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-09-30 12:05:05,927 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:06,938 INFO spawned: 'ngrok' with pid 121
+2024-09-30 12:05:07,919 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:08,932 INFO spawned: 'ngrok' with pid 131
+2024-09-30 12:05:09,871 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:11,888 INFO spawned: 'ngrok' with pid 142
+2024-09-30 12:05:12,845 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:15,855 INFO spawned: 'ngrok' with pid 152
+2024-09-30 12:05:16,835 WARN exited: ngrok (exit status 1; not expected)
+2024-09-30 12:05:17,844 INFO gave up: ngrok entered FATAL state, too many start retries too quickly
+2024-10-01 12:21:12,534 WARN received SIGTERM indicating exit request
+2024-10-01 12:21:12,542 INFO waiting for jupyterlab, streamlit to die
+2024-10-01 12:21:13,186 INFO stopped: streamlit (exit status 0)
+2024-10-01 12:21:14,435 INFO stopped: jupyterlab (exit status 0)
+2024-10-01 12:22:52,466 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2024-10-01 12:22:52,475 INFO supervisord started with pid 1
+2024-10-01 12:22:53,478 INFO spawned: 'jupyterlab' with pid 10
+2024-10-01 12:22:53,481 INFO spawned: 'ngrok' with pid 11
+2024-10-01 12:22:53,483 INFO spawned: 'streamlit' with pid 12
+2024-10-01 12:22:54,621 INFO success: jupyterlab entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-10-01 12:22:54,622 INFO success: ngrok entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-10-01 12:22:54,623 INFO success: streamlit entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2024-10-01 12:22:54,648 WARN exited: ngrok (exit status 1; not expected)
+2024-10-01 12:22:55,662 INFO spawned: 'ngrok' with pid 28
+2024-10-01 12:22:56,610 WARN exited: ngrok (exit status 1; not expected)
+2024-10-01 12:22:57,622 INFO spawned: 'ngrok' with pid 39
+2024-10-01 12:22:58,557 WARN exited: ngrok (exit status 1; not expected)
+2024-10-01 12:23:00,581 INFO spawned: 'ngrok' with pid 49
+2024-10-01 12:23:01,548 WARN exited: ngrok (exit status 1; not expected)
+2024-10-01 12:23:04,563 INFO spawned: 'ngrok' with pid 60
+2024-10-01 12:23:05,534 WARN exited: ngrok (exit status 1; not expected)
+2024-10-01 12:23:06,537 INFO gave up: ngrok entered FATAL state, too many start retries too quickly

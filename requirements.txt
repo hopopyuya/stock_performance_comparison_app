@@ -4,7 +4,6 @@ seaborn
 yfinance
 matplotlib
 japanize_matplotlib
-requests
 jupyterlab
 pyarrow
 google-cloud-bigquery
