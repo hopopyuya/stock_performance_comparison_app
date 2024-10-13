@@ -1,12 +1,12 @@
 version: "3.8"
 
 services:
-  stock_app:
+  stock-app:
     build: .
-    container_name: stock_app
+    container_name: stock-app
     ports:
-      - "8501:8501"
-      - "4041:4040"
+      - "80:80"     # ポートを80に変更
+      - "4040:4040" # ngrokのポートを4040に変更
     volumes:
       - ./workspace:/app/workspace
       - ./workspace/.streamlit:/app/workspace/.streamlit
@@ -20,7 +20,7 @@ services:
     image: jupyter/base-notebook:latest
     container_name: jupyterlab
     ports:
-      - 8888:8888
+      - "8888:8888"
     volumes:
       - ./workspace:/home/jovyan/work
     environment:
@@ -33,8 +33,8 @@ services:
     image: ngrok/ngrok:latest
     container_name: ngrok
     restart: unless-stopped
-    command: http --domain=magnetic-moccasin-fresh.ngrok-free.app stock_app:8501 --log=stdout
+    command: http --domain=magnetic-moccasin-fresh.ngrok-free.app stock-app:80 --log=stdout  # stock-app:8501 から stock-app:80 に変更
     ports:
-      - 4040:4040
+      - "4040:4040"
     environment:
       - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}  # GitHub Secretsから参照

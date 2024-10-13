@@ -35,16 +35,7 @@ COPY workspace/ /app/workspace/
 WORKDIR /app/workspace
 
 # ポートの開放
-EXPOSE 8888 8501 4040
-
-# ngrok.yml の作成 (環境変数からトークンを取得)
-RUN mkdir -p /root/.ngrok2 && \
-    echo "version: '2'" > /root/.ngrok2/ngrok.yml && \
-    echo "authtoken: ${NGROK_AUTHTOKEN}" >> /root/.ngrok2/ngrok.yml && \
-    echo "tunnels:" >> /root/.ngrok2/ngrok.yml && \
-    echo "  streamlit:" >> /root/.ngrok2/ngrok.yml && \
-    echo "    proto: http" >> /root/.ngrok2/ngrok.yml && \
-    echo "    addr: 8501" >> /root/.ngrok2/ngrok.yml
+EXPOSE 80 4040 8888
 
 # Supervisorを起動
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

@@ -51,8 +51,8 @@ jobs:
               "essential": true,
               "portMappings": [
                 {
-                  "containerPort": 8501,  # コンテナポートを8501に設定
-                  "hostPort": 8501,       # ホストポートを8501に設定
+                  "containerPort": 80,  # コンテナポートを80に設定
+                  "hostPort": 80,       # ホストポートを80に設定
                   "protocol": "tcp"
                 }
               ],
@@ -72,7 +72,7 @@ jobs:
               "command": [
                 "http",
                 "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                "stock-app:8501",
+                "localhost:80",  # stock-app:8501 から localhost:80 に変更
                 "--log=stdout"
               ],
               "portMappings": [
@@ -100,7 +100,7 @@ jobs:
         cat ecs-task-def.json
 
     - name: Deploy to ECS
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v2  # @v1 から @v2 に更新
       with:
         task-definition: ecs-task-def.json
         service: stock-app-service
