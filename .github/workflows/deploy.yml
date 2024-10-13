@@ -74,5 +74,3 @@ jobs:
         service: stock-app-service
         cluster: stock-app-cluster
         wait-for-service-stability: true
-        environment:  # ここで環境変数を設定するのではなく、別の方法を検討する必要があります
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}  # Secretsを渡す
