@@ -51,8 +51,8 @@ jobs:
               "essential": true,
               "portMappings": [
                 {
-                  "containerPort": 8501,
-                  "hostPort": 8501,
+                  "containerPort": 8501,  # コンテナポートを8501に設定
+                  "hostPort": 8501,       # ホストポートを8501に設定
                   "protocol": "tcp"
                 }
               ],
@@ -72,7 +72,7 @@ jobs:
               "command": [
                 "http",
                 "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                "stock_app:8501",
+                "stock-app:8501",
                 "--log=stdout"
               ],
               "portMappings": [
