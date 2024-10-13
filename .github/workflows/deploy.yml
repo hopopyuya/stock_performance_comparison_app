@@ -16,14 +16,10 @@ jobs:
     - name: Log in to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-      with:
-        region: ${{ secrets.AWS_REGION }}  # リージョンを指定
 
     - name: Build, tag, and push image to Amazon ECR
       env:
-        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }} 
       run: |
         # ECRリポジトリURIを取得
         IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
@@ -39,5 +35,3 @@ jobs:
         service: stock-app-service
         cluster: stock-app-cluster
         wait-for-service-stability: true
-      env:
-        AWS_REGION: ${{ secrets.AWS_REGION }}
