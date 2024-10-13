@@ -51,8 +51,8 @@ jobs:
               "essential": true,
               "portMappings": [
                 {
-                  "containerPort": 80,
-                  "hostPort": 80,
+                  "containerPort": 8501,  # 修正: コンテナポートを8501に変更
+                  "hostPort": 8501,       # 修正: ホストポートを8501に変更
                   "protocol": "tcp"
                 }
               ]
@@ -74,3 +74,5 @@ jobs:
         service: stock-app-service
         cluster: stock-app-cluster
         wait-for-service-stability: true
+        environment:
+          - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}  # Secretsを渡す

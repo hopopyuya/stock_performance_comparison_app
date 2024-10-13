@@ -8866,3 +8866,7 @@
 2024-10-13 09:58:03,885 INFO spawned: 'ngrok' with pid 19845
 2024-10-13 09:58:04,821 WARN exited: ngrok (exit status 1; not expected)
 2024-10-13 09:58:05,824 INFO gave up: ngrok entered FATAL state, too many start retries too quickly
+2024-10-13 11:57:24,000 WARN received SIGTERM indicating exit request
+2024-10-13 11:57:24,010 INFO waiting for jupyterlab, streamlit to die
+2024-10-13 11:57:24,739 INFO stopped: streamlit (exit status 0)
+2024-10-13 11:57:26,754 INFO stopped: jupyterlab (exit status 0)
