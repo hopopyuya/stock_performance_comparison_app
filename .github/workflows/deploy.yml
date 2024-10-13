@@ -51,16 +51,48 @@ jobs:
               "essential": true,
               "portMappings": [
                 {
-                  "containerPort": 80,
-                  "hostPort": 80,     
+                  "containerPort": 8501,
+                  "hostPort": 8501,
                   "protocol": "tcp"
+                }
+              ],
+              "environment": [
+                {
+                  "name": "NGROK_AUTHTOKEN",
+                  "value": "${{ secrets.NGROK_AUTHTOKEN }}"
+                }
+              ]
+            },
+            {
+              "name": "ngrok",
+              "image": "ngrok/ngrok:latest",
+              "memory": 128,
+              "cpu": 128,
+              "essential": false,
+              "command": [
+                "http",
+                "--domain=magnetic-moccasin-fresh.ngrok-free.app",
+                "stock_app:8501",
+                "--log=stdout"
+              ],
+              "portMappings": [
+                {
+                  "containerPort": 4040,
+                  "hostPort": 4040,
+                  "protocol": "tcp"
+                }
+              ],
+              "environment": [
+                {
+                  "name": "NGROK_AUTHTOKEN",
+                  "value": "${{ secrets.NGROK_AUTHTOKEN }}"
                 }
               ]
             }
           ],
           "requiresCompatibilities": ["FARGATE"],
-          "cpu": "256",
-          "memory": "512",
+          "cpu": "512",
+          "memory": "1024",
           "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole",
           "taskRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole"
         }
