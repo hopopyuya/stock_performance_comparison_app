@@ -72,7 +72,7 @@ jobs:
               "command": [
                 "http",
                 "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                "localhost:80",  # stock-app:8501 から localhost:80 に変更
+                "localhost:8501",  # stock-app:8501 から localhost:80 に変更
                 "--log=stdout"
               ],
               "portMappings": [
