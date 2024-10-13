@@ -3,7 +3,7 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - main  # mainブランチにプッシュされたときにデプロイ
+      - main
 
 jobs:
   deploy:
@@ -26,12 +26,39 @@ jobs:
 
     - name: Build, tag, and push image to Amazon ECR
       run: |
-        # ECRリポジトリURIを取得
         IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
+        echo "ECR URI: $IMAGE_URI"
+        
         # Dockerイメージをビルド
         docker build -t "$IMAGE_URI:latest" .
+        
         # ECRにプッシュ
         docker push "$IMAGE_URI:latest"
+
+    - name: Create ECS task definition
+      run: |
+        # ECRイメージURIを埋め込んだecs-task-def.jsonを生成
+        cat <<EOF > ecs-task-def.json
+        {
+          "family": "stock-app-family",
+          "containerDefinitions": [
+            {
+              "name": "stock-app",
+              "image": "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest",
+              "memory": 512,
+              "cpu": 256,
+              "essential": true,
+              "portMappings": [
+                {
+                  "containerPort": 80,
+                  "hostPort": 80
+                }
+              ]
+            }
+          ]
+        }
+        EOF
+        cat ecs-task-def.json
 
     - name: Deploy to ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
