@@ -10,61 +10,66 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Set AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Log in to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build, tag, and push image to Amazon ECR
-      run: |
-        IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
-        echo "ECR URI: $IMAGE_URI"
-        
-        # Dockerイメージをビルド
-        docker build -t "$IMAGE_URI:latest" .
-        
-        # ECRにプッシュ
-        docker push "$IMAGE_URI:latest"
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        run: |
+          IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+          echo "ECR URI: $IMAGE_URI"
+          
+          # Dockerイメージをビルド
+          docker build -t "$IMAGE_URI:latest" .
+          
+          # ECRにプッシュ
+          docker push "$IMAGE_URI:latest"
 
-    - name: Extract GCP service account key fields
-      run: |
-        echo "Extracting GCP service account key fields..."
+      - name: Extract GCP service account key fields
+        run: |
+          echo "Extracting GCP service account key fields..."
 
-        # GCPサービスアカウントキーをファイルに書き込む
-        echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > gcp_key.json
+          # GCPサービスアカウントキーをファイルに書き込む
+          echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > gcp_key.json
 
-        # jqを使用してフィールドを抽出し、環境変数に設定
-        echo "GCP_PROJECT_ID=$(jq -r '.project_id' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_PRIVATE_KEY_ID=$(jq -r '.private_key_id' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_PRIVATE_KEY=$(jq -r '.private_key' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_CLIENT_EMAIL=$(jq -r '.client_email' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_CLIENT_ID=$(jq -r '.client_id' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_AUTH_URI=$(jq -r '.auth_uri' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_TOKEN_URI=$(jq -r '.token_uri' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(jq -r '.auth_provider_x509_cert_url' gcp_key.json)" >> $GITHUB_ENV
-        echo "GCP_CLIENT_X509_CERT_URL=$(jq -r '.client_x509_cert_url' gcp_key.json)" >> $GITHUB_ENV
+          # jqを使用してフィールドを抽出し、環境変数に設定
+          echo "GCP_PROJECT_ID=$(jq -r '.project_id' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_PRIVATE_KEY_ID=$(jq -r '.private_key_id' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_PRIVATE_KEY=$(jq -r '.private_key' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_CLIENT_EMAIL=$(jq -r '.client_email' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_CLIENT_ID=$(jq -r '.client_id' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_AUTH_URI=$(jq -r '.auth_uri' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_TOKEN_URI=$(jq -r '.token_uri' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(jq -r '.auth_provider_x509_cert_url' gcp_key.json)" >> $GITHUB_ENV
+          echo "GCP_CLIENT_X509_CERT_URL=$(jq -r '.client_x509_cert_url' gcp_key.json)" >> $GITHUB_ENV
 
-        # 一時ファイルを削除
-        rm gcp_key.json
+          # 一時ファイルを削除
+          rm gcp_key.json
 
-    - name: Create ECS task definition
-      env:
-        NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-      run: |
-        # ECRイメージURIを再定義
-        IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
+      - name: Create ECS task definition
+        env:
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        run: |
+          # ECRイメージURIを再定義
+          IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
 
-        # ecs-task-def.jsonを生成
-        cat <<EOF > ecs-task-def.json
+          # ecs-task-def.jsonを生成
+          cat <<EOF > ecs-task-def.json
 {
   "family": "stock-app-family",
   "networkMode": "awsvpc",
@@ -109,62 +114,4 @@ jobs:
         },
         {
           "name": "GCP_AUTH_URI",
-          "value": "${GCP_AUTH_URI}"
-        },
-        {
-          "name": "GCP_TOKEN_URI",
-          "value": "${GCP_TOKEN_URI}"
-        },
-        {
-          "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
-          "value": "${GCP_AUTH_PROVIDER_X509_CERT_URL}"
-        },
-        {
-          "name": "GCP_CLIENT_X509_CERT_URL",
-          "value": "${GCP_CLIENT_X509_CERT_URL}"
-        }
-      ]
-    },
-    {
-      "name": "ngrok",
-      "image": "ngrok/ngrok:latest",
-      "memory": 128,
-      "cpu": 128,
-      "essential": false,
-      "command": [
-        "http",
-        "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-        "localhost:80",
-        "--log=stdout"
-      ],
-      "portMappings": [
-        {
-          "containerPort": 4040,
-          "hostPort": 4040,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {
-          "name": "NGROK_AUTHTOKEN",
-          "value": "${NGROK_AUTHTOKEN}"
-        }
-      ]
-    }
-  ],
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole"
-}
-EOF
-        cat ecs-task-def.json
-
-    - name: Deploy to ECS
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-      with:
-        task-definition: ecs-task-def.json
-        service: stock-app-service
-        cluster: stock-app-cluster
-        wait-for-service-stability: true
+          
