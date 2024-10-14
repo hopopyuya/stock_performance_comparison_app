@@ -49,8 +49,7 @@ jobs:
           # jqを使用してフィールドを抽出し、環境変数に設定
           GCP_PROJECT_ID=$(jq -r '.project_id' gcp_key.json)
           GCP_PRIVATE_KEY_ID=$(jq -r '.private_key_id' gcp_key.json)
-          GCP_PRIVATE_KEY=$(jq -r '.private_key' gcp_key.json | sed 's/\\n/\
-/g')
+          GCP_PRIVATE_KEY=$(jq -r '.private_key' gcp_key.json | sed 's/\\\\n/\\n/g')
           GCP_CLIENT_EMAIL=$(jq -r '.client_email' gcp_key.json)
           GCP_CLIENT_ID=$(jq -r '.client_id' gcp_key.json)
           GCP_AUTH_URI=$(jq -r '.auth_uri' gcp_key.json)
@@ -58,116 +57,4 @@ jobs:
           GCP_AUTH_PROVIDER_X509_CERT_URL=$(jq -r '.auth_provider_x509_cert_url' gcp_key.json)
           GCP_CLIENT_X509_CERT_URL=$(jq -r '.client_x509_cert_url' gcp_key.json)
 
-          echo "GCP_PROJECT_ID=$GCP_PROJECT_ID" >> $GITHUB_ENV
-          echo "GCP_PRIVATE_KEY_ID=$GCP_PRIVATE_KEY_ID" >> $GITHUB_ENV
-          echo "GCP_PRIVATE_KEY=$GCP_PRIVATE_KEY" >> $GITHUB_ENV
-          echo "GCP_CLIENT_EMAIL=$GCP_CLIENT_EMAIL" >> $GITHUB_ENV
-          echo "GCP_CLIENT_ID=$GCP_CLIENT_ID" >> $GITHUB_ENV
-          echo "GCP_AUTH_URI=$GCP_AUTH_URI" >> $GITHUB_ENV
-          echo "GCP_TOKEN_URI=$GCP_TOKEN_URI" >> $GITHUB_ENV
-          echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$GCP_AUTH_PROVIDER_X509_CERT_URL" >> $GITHUB_ENV
-          echo "GCP_CLIENT_X509_CERT_URL=$GCP_CLIENT_X509_CERT_URL" >> $GITHUB_ENV
-
-          # 一時ファイルを削除
-          rm gcp_key.json
-
-      - name: Create ECS task definition
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        run: |
-          # ECRイメージURIを再定義
-          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
-
-          # ecs-task-def.jsonを生成
-          echo '{
-            "family": "stock-app-family",
-            "networkMode": "awsvpc",
-            "containerDefinitions": [
-              {
-                "name": "stock-app",
-                "image": "'${IMAGE_URI}:latest'",
-                "memory": 512,
-                "cpu": 256,
-                "essential": true,
-                "portMappings": [
-                  {
-                    "containerPort": 80,
-                    "hostPort": 80,
-                    "protocol": "tcp"
-                  }
-                ],
-                "environment": [
-                  {
-                    "name": "NGROK_AUTHTOKEN",
-                    "value": "'${NGROK_AUTHTOKEN}'"
-                  },
-                  {
-                    "name": "GCP_PROJECT_ID",
-                    "value": "'${GCP_PROJECT_ID}'"
-                  },
-                  {
-                    "name": "GCP_PRIVATE_KEY_ID",
-                    "value": "'${GCP_PRIVATE_KEY_ID}'"
-                  },
-                  {
-                    "name": "GCP_PRIVATE_KEY",
-                    "value": "'${GCP_PRIVATE_KEY}'"
-                  },
-                  {
-                    "name": "GCP_CLIENT_EMAIL",
-                    "value": "'${GCP_CLIENT_EMAIL}'"
-                  },
-                  {
-                    "name": "GCP_CLIENT_ID",
-                    "value": "'${GCP_CLIENT_ID}'"
-                  },
-                  {
-                    "name": "GCP_AUTH_URI",
-                    "value": "'${GCP_AUTH_URI}'"
-                  },
-                  {
-                    "name": "GCP_TOKEN_URI",
-                    "value": "'${GCP_TOKEN_URI}'"
-                  },
-                  {
-                    "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
-                    "value": "'${GCP_AUTH_PROVIDER_X509_CERT_URL}'"
-                  },
-                  {
-                    "name": "GCP_CLIENT_X509_CERT_URL",
-                    "value": "'${GCP_CLIENT_X509_CERT_URL}'"
-                  }
-                ]
-              },
-              {
-                "name": "ngrok",
-                "image": "ngrok/ngrok:latest",
-                "memory": 128,
-                "cpu": 128,
-                "essential": false,
-                "command": [
-                  "http",
-                  "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                  "localhost:80",
-                  "--log=stdout"
-                ],
-                "portMappings": [
-                  {
-                    "containerPort": 4040,
-                    "hostPort": 4040,
-                    "protocol": "tcp"
-                  }
-                ],
-                "environment": [
-                  {
-                    "name": "NGROK_AUTHTOKEN",
-                    "value": "'${NGROK_AUTHTOKEN}'"
-                  }
-                ]
-              }
-            ],
-            "requiresCompatibilities": ["FARGATE"],
-            "cpu": "5
+          echo "GCP_PROJECT_ID=$GCP_PROJECT_ID" 
