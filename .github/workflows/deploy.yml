@@ -52,7 +52,10 @@ jobs:
 
     - name: Create ECS task definition
       run: |
-        # ECRイメージURIを埋め込んだecs-task-def.jsonを生成
+        # ECRイメージURIを再定義
+        IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
+        
+        # ecs-task-def.jsonを生成
         cat <<EOF > ecs-task-def.json
         {
           "family": "stock-app-family",
@@ -60,7 +63,7 @@ jobs:
           "containerDefinitions": [
             {
               "name": "stock-app",
-              "image": "$IMAGE_URI:latest",
+              "image": "${IMAGE_URI}:latest",
               "memory": 512,
               "cpu": 256,
               "essential": true,
