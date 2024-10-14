@@ -53,12 +53,13 @@ jobs:
           GCP_CLIENT_X509_CERT_URL: ${{ secrets.GCP_CLIENT_X509_CERT_URL }}
         run: |
           echo "Creating GCP service account key file..."
+          echo "${GCP_PRIVATE_KEY}" | sed 's/\\n/\n/g' > private_key.txt
           cat > gcp_key.json <<EOF
           {
             "type": "${GCP_TYPE}",
             "project_id": "${GCP_PROJECT_ID}",
             "private_key_id": "${GCP_PRIVATE_KEY_ID}",
-            "private_key": "${GCP_PRIVATE_KEY}",
+            "private_key": "$(cat private_key.txt)",
             "client_email": "${GCP_CLIENT_EMAIL}",
             "client_id": "${GCP_CLIENT_ID}",
             "auth_uri": "${GCP_AUTH_URI}",
