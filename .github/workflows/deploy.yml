@@ -10,73 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Set AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
-        run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
-          echo "ECR URI: $IMAGE_URI"
-          
-          # Dockerイメージをビルド
-          docker build -t "$IMAGE_URI:latest" .
-          
-          # ECRにプッシュ
-          docker push "$IMAGE_URI:latest"
+    - name: Build, tag, and push image to Amazon ECR
+      run: |
+        IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
+        echo "ECR URI: $IMAGE_URI"
+        
+        # Dockerイメージをビルド
+        docker build -t "$IMAGE_URI:latest" .
+        
+        # ECRにプッシュ
+        docker push "$IMAGE_URI:latest"
 
-      - name: Extract GCP service account key fields
-        env:
-          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-        run: |
-          echo "Extracting GCP service account key fields..."
-          echo "GCP_PROJECT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.project_id')" >> $GITHUB_ENV
-          echo "GCP_PRIVATE_KEY_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key_id')" >> $GITHUB_ENV
-          echo "GCP_PRIVATE_KEY=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key')" >> $GITHUB_ENV
-          echo "GCP_CLIENT_EMAIL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_email')" >> $GITHUB_ENV
-          echo "GCP_CLIENT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_id')" >> $GITHUB_ENV
-          echo "GCP_AUTH_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_uri')" >> $GITHUB_ENV
-          echo "GCP_TOKEN_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.token_uri')" >> $GITHUB_ENV
-          echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_provider_x509_cert_url')" >> $GITHUB_ENV
-          echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_x509_cert_url')" >> $GITHUB_ENV
+    - name: Extract GCP service account key fields
+      env:
+        GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      run: |
+        echo "Extracting GCP service account key fields..."
+        echo "GCP_PROJECT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.project_id')" >> $GITHUB_ENV
+        echo "GCP_PRIVATE_KEY_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key_id')" >> $GITHUB_ENV
+        echo "GCP_PRIVATE_KEY=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_EMAIL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_email')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_id')" >> $GITHUB_ENV
+        echo "GCP_AUTH_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_uri')" >> $GITHUB_ENV
+        echo "GCP_TOKEN_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.token_uri')" >> $GITHUB_ENV
+        echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_provider_x509_cert_url')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_x509_cert_url')" >> $GITHUB_ENV
 
-      - name: Create ECS task definition
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-        run: |
-          # ECRイメージURIを再定義
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
-
-          # ecs-task-def.jsonを生成
-          cat <<EOF > ecs-task-def.json
-          {
-            "family": "stock-app-family",
-            "networkMode": "awsvpc",
-            "containerDefinitions": [
-              {
-                "name": "stock-app",
-                "image": "${IMAGE_URI}:latest",
-                "memory": 512,
-                "cpu": 256,
-                "essential": true,
-                "portMappings": [
-                  {
-                    "containerPort": 80,
-                    "hostPort": 80,
-                    "protocol": "tcp"
-                  }
-                ],
-                "environment": [
-                  {
-                    "name": "NGROK_AUTHTOKEN",
-                    "value": "${NGROK_AU
+    - name: Create ECS task definition
+      env:
+        NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+      run: |
+        # ECRイメージURIを再定義
+        IMAGE_UR
