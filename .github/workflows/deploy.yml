@@ -35,6 +35,21 @@ jobs:
         # ECRにプッシュ
         docker push "$IMAGE_URI:latest"
 
+    - name: Extract GCP service account key fields
+      env:
+        GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      run: |
+        echo "Extracting GCP service account key fields..."
+        echo "GCP_PROJECT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.project_id')" >> $GITHUB_ENV
+        echo "GCP_PRIVATE_KEY_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key_id')" >> $GITHUB_ENV
+        echo "GCP_PRIVATE_KEY=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.private_key')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_EMAIL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_email')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_ID=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_id')" >> $GITHUB_ENV
+        echo "GCP_AUTH_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_uri')" >> $GITHUB_ENV
+        echo "GCP_TOKEN_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.token_uri')" >> $GITHUB_ENV
+        echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_provider_x509_cert_url')" >> $GITHUB_ENV
+        echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_x509_cert_url')" >> $GITHUB_ENV
+
     - name: Create ECS task definition
       run: |
         # ECRイメージURIを埋め込んだecs-task-def.jsonを生成
@@ -45,14 +60,14 @@ jobs:
           "containerDefinitions": [
             {
               "name": "stock-app",
-              "image": "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest",
+              "image": "$IMAGE_URI:latest",
               "memory": 512,
               "cpu": 256,
               "essential": true,
               "portMappings": [
                 {
-                  "containerPort": 80,  # コンテナポートを80に設定
-                  "hostPort": 80,       # ホストポートを80に設定
+                  "containerPort": 80,
+                  "hostPort": 80,
                   "protocol": "tcp"
                 }
               ],
@@ -60,6 +75,42 @@ jobs:
                 {
                   "name": "NGROK_AUTHTOKEN",
                   "value": "${{ secrets.NGROK_AUTHTOKEN }}"
+                },
+                {
+                  "name": "GCP_PROJECT_ID",
+                  "value": "${{ env.GCP_PROJECT_ID }}"
+                },
+                {
+                  "name": "GCP_PRIVATE_KEY_ID",
+                  "value": "${{ env.GCP_PRIVATE_KEY_ID }}"
+                },
+                {
+                  "name": "GCP_PRIVATE_KEY",
+                  "value": "${{ env.GCP_PRIVATE_KEY }}"
+                },
+                {
+                  "name": "GCP_CLIENT_EMAIL",
+                  "value": "${{ env.GCP_CLIENT_EMAIL }}"
+                },
+                {
+                  "name": "GCP_CLIENT_ID",
+                  "value": "${{ env.GCP_CLIENT_ID }}"
+                },
+                {
+                  "name": "GCP_AUTH_URI",
+                  "value": "${{ env.GCP_AUTH_URI }}"
+                },
+                {
+                  "name": "GCP_TOKEN_URI",
+                  "value": "${{ env.GCP_TOKEN_URI }}"
+                },
+                {
+                  "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
+                  "value": "${{ env.GCP_AUTH_PROVIDER_X509_CERT_URL }}"
+                },
+                {
+                  "name": "GCP_CLIENT_X509_CERT_URL",
+                  "value": "${{ env.GCP_CLIENT_X509_CERT_URL }}"
                 }
               ]
             },
@@ -72,7 +123,7 @@ jobs:
               "command": [
                 "http",
                 "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                "localhost:8501",  # stock-app:8501 から localhost:80 に変更
+                "localhost:80",
                 "--log=stdout"
               ],
               "portMappings": [
@@ -100,7 +151,7 @@ jobs:
         cat ecs-task-def.json
 
     - name: Deploy to ECS
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v2  # @v1 から @v2 に更新
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v2
       with:
         task-definition: ecs-task-def.json
         service: stock-app-service
