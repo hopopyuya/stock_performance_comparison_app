@@ -64,6 +64,8 @@ jobs:
         env:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
           # ECRイメージURIを再定義
           IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
@@ -88,30 +90,3 @@ jobs:
         }
       ],
       "environment": [
-        {
-          "name": "NGROK_AUTHTOKEN",
-          "value": "${NGROK_AUTHTOKEN}"
-        },
-        {
-          "name": "GCP_PROJECT_ID",
-          "value": "${GCP_PROJECT_ID}"
-        },
-        {
-          "name": "GCP_PRIVATE_KEY_ID",
-          "value": "${GCP_PRIVATE_KEY_ID}"
-        },
-        {
-          "name": "GCP_PRIVATE_KEY",
-          "value": "${GCP_PRIVATE_KEY}"
-        },
-        {
-          "name": "GCP_CLIENT_EMAIL",
-          "value": "${GCP_CLIENT_EMAIL}"
-        },
-        {
-          "name": "GCP_CLIENT_ID",
-          "value": "${GCP_CLIENT_ID}"
-        },
-        {
-          "name": "GCP_AUTH_URI",
-          
