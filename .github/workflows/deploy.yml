@@ -60,7 +60,7 @@ jobs:
           GCP_SERVICE_ACCOUNT_KEY_CONTENT=$(cat gcp_key.json)
 
           # ecs-task-def.json を生成
-          cat > ecs-task-def.json <<EOF
+cat > ecs-task-def.json <<EOF
 {
   "family": "stock-app-family",
   "networkMode": "awsvpc",
@@ -115,3 +115,21 @@ jobs:
         }
       ]
     }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
+}
+EOF
+
+          cat ecs-task-def.json
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs-task-def.json
+          service: stock-app-service
+          cluster: stock-app-cluster
+          wait-for-service-stability: true
