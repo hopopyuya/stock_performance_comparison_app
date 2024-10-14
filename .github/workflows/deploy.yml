@@ -51,106 +51,119 @@ jobs:
         echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_x509_cert_url')" >> $GITHUB_ENV
 
     - name: Create ECS task definition
+      env:
+        NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
       run: |
         # ECRイメージURIを再定義
         IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}"
-        
+
+        # 環境変数のデバッグ（オプション）
+        # echo "GCP_PROJECT_ID: $GCP_PROJECT_ID"
+        # echo "GCP_PRIVATE_KEY_ID: $GCP_PRIVATE_KEY_ID"
+        # echo "GCP_PRIVATE_KEY: $GCP_PRIVATE_KEY"
+        # echo "GCP_CLIENT_EMAIL: $GCP_CLIENT_EMAIL"
+        # echo "GCP_CLIENT_ID: $GCP_CLIENT_ID"
+        # echo "GCP_AUTH_URI: $GCP_AUTH_URI"
+        # echo "GCP_TOKEN_URI: $GCP_TOKEN_URI"
+        # echo "GCP_AUTH_PROVIDER_X509_CERT_URL: $GCP_AUTH_PROVIDER_X509_CERT_URL"
+        # echo "GCP_CLIENT_X509_CERT_URL: $GCP_CLIENT_X509_CERT_URL"
+
         # ecs-task-def.jsonを生成
         cat <<EOF > ecs-task-def.json
+{
+  "family": "stock-app-family",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "stock-app",
+      "image": "${IMAGE_URI}:latest",
+      "memory": 512,
+      "cpu": 256,
+      "essential": true,
+      "portMappings": [
         {
-          "family": "stock-app-family",
-          "networkMode": "awsvpc",
-          "containerDefinitions": [
-            {
-              "name": "stock-app",
-              "image": "${IMAGE_URI}:latest",
-              "memory": 512,
-              "cpu": 256,
-              "essential": true,
-              "portMappings": [
-                {
-                  "containerPort": 80,
-                  "hostPort": 80,
-                  "protocol": "tcp"
-                }
-              ],
-              "environment": [
-                {
-                  "name": "NGROK_AUTHTOKEN",
-                  "value": "${{ secrets.NGROK_AUTHTOKEN }}"
-                },
-                {
-                  "name": "GCP_PROJECT_ID",
-                  "value": "${{ env.GCP_PROJECT_ID }}"
-                },
-                {
-                  "name": "GCP_PRIVATE_KEY_ID",
-                  "value": "${{ env.GCP_PRIVATE_KEY_ID }}"
-                },
-                {
-                  "name": "GCP_PRIVATE_KEY",
-                  "value": "${{ env.GCP_PRIVATE_KEY }}"
-                },
-                {
-                  "name": "GCP_CLIENT_EMAIL",
-                  "value": "${{ env.GCP_CLIENT_EMAIL }}"
-                },
-                {
-                  "name": "GCP_CLIENT_ID",
-                  "value": "${{ env.GCP_CLIENT_ID }}"
-                },
-                {
-                  "name": "GCP_AUTH_URI",
-                  "value": "${{ env.GCP_AUTH_URI }}"
-                },
-                {
-                  "name": "GCP_TOKEN_URI",
-                  "value": "${{ env.GCP_TOKEN_URI }}"
-                },
-                {
-                  "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
-                  "value": "${{ env.GCP_AUTH_PROVIDER_X509_CERT_URL }}"
-                },
-                {
-                  "name": "GCP_CLIENT_X509_CERT_URL",
-                  "value": "${{ env.GCP_CLIENT_X509_CERT_URL }}"
-                }
-              ]
-            },
-            {
-              "name": "ngrok",
-              "image": "ngrok/ngrok:latest",
-              "memory": 128,
-              "cpu": 128,
-              "essential": false,
-              "command": [
-                "http",
-                "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                "localhost:80",
-                "--log=stdout"
-              ],
-              "portMappings": [
-                {
-                  "containerPort": 4040,
-                  "hostPort": 4040,
-                  "protocol": "tcp"
-                }
-              ],
-              "environment": [
-                {
-                  "name": "NGROK_AUTHTOKEN",
-                  "value": "${{ secrets.NGROK_AUTHTOKEN }}"
-                }
-              ]
-            }
-          ],
-          "requiresCompatibilities": ["FARGATE"],
-          "cpu": "512",
-          "memory": "1024",
-          "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole",
-          "taskRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole"
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
         }
-        EOF
+      ],
+      "environment": [
+        {
+          "name": "NGROK_AUTHTOKEN",
+          "value": "${NGROK_AUTHTOKEN}"
+        },
+        {
+          "name": "GCP_PROJECT_ID",
+          "value": "${GCP_PROJECT_ID}"
+        },
+        {
+          "name": "GCP_PRIVATE_KEY_ID",
+          "value": "${GCP_PRIVATE_KEY_ID}"
+        },
+        {
+          "name": "GCP_PRIVATE_KEY",
+          "value": "${GCP_PRIVATE_KEY}"
+        },
+        {
+          "name": "GCP_CLIENT_EMAIL",
+          "value": "${GCP_CLIENT_EMAIL}"
+        },
+        {
+          "name": "GCP_CLIENT_ID",
+          "value": "${GCP_CLIENT_ID}"
+        },
+        {
+          "name": "GCP_AUTH_URI",
+          "value": "${GCP_AUTH_URI}"
+        },
+        {
+          "name": "GCP_TOKEN_URI",
+          "value": "${GCP_TOKEN_URI}"
+        },
+        {
+          "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
+          "value": "${GCP_AUTH_PROVIDER_X509_CERT_URL}"
+        },
+        {
+          "name": "GCP_CLIENT_X509_CERT_URL",
+          "value": "${GCP_CLIENT_X509_CERT_URL}"
+        }
+      ]
+    },
+    {
+      "name": "ngrok",
+      "image": "ngrok/ngrok:latest",
+      "memory": 128,
+      "cpu": 128,
+      "essential": false,
+      "command": [
+        "http",
+        "--domain=magnetic-moccasin-fresh.ngrok-free.app",
+        "localhost:80",
+        "--log=stdout"
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4040,
+          "hostPort": 4040,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NGROK_AUTHTOKEN",
+          "value": "${NGROK_AUTHTOKEN}"
+        }
+      ]
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole"
+}
+EOF
         cat ecs-task-def.json
 
     - name: Deploy to ECS
