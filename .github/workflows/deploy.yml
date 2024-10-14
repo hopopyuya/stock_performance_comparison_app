@@ -61,75 +61,57 @@ jobs:
 
           # ecs-task-def.json を生成
           cat > ecs-task-def.json <<EOF
+{
+  "family": "stock-app-family",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
     {
-      "family": "stock-app-family",
-      "networkMode": "awsvpc",
-      "containerDefinitions": [
+      "name": "stock-app",
+      "image": "${IMAGE_URI}:latest",
+      "memory": 512,
+      "cpu": 256,
+      "essential": true,
+      "portMappings": [
         {
-          "name": "stock-app",
-          "image": "${IMAGE_URI}:latest",
-          "memory": 512,
-          "cpu": 256,
-          "essential": true,
-          "portMappings": [
-            {
-              "containerPort": 80,
-              "hostPort": 80,
-              "protocol": "tcp"
-            }
-          ],
-          "environment": [
-            {
-              "name": "NGROK_AUTHTOKEN",
-              "value": "${NGROK_AUTHTOKEN}"
-            },
-            {
-              "name": "GCP_SERVICE_ACCOUNT_KEY",
-              "value": "${GCP_SERVICE_ACCOUNT_KEY_CONTENT}"
-            }
-          ]
-        },
-        {
-          "name": "ngrok",
-          "image": "ngrok/ngrok:latest",
-          "memory": 128,
-          "cpu": 128,
-          "essential": false,
-          "command": [
-            "http",
-            "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-            "localhost:80",
-            "--log=stdout"
-          ],
-          "portMappings": [
-            {
-              "containerPort": 4040,
-              "hostPort": 4040,
-              "protocol": "tcp"
-            }
-          ],
-          "environment": [
-            {
-              "name": "NGROK_AUTHTOKEN",
-              "value": "${NGROK_AUTHTOKEN}"
-            }
-          ]
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
         }
       ],
-      "requiresCompatibilities": ["FARGATE"],
-      "cpu": "512",
-      "memory": "1024",
-      "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
-      "taskRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
+      "environment": [
+        {
+          "name": "NGROK_AUTHTOKEN",
+          "value": "${NGROK_AUTHTOKEN}"
+        },
+        {
+          "name": "GCP_SERVICE_ACCOUNT_KEY",
+          "value": "${GCP_SERVICE_ACCOUNT_KEY_CONTENT}"
+        }
+      ]
+    },
+    {
+      "name": "ngrok",
+      "image": "ngrok/ngrok:latest",
+      "memory": 128,
+      "cpu": 128,
+      "essential": false,
+      "command": [
+        "http",
+        "--domain=magnetic-moccasin-fresh.ngrok-free.app",
+        "localhost:80",
+        "--log=stdout"
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4040,
+          "hostPort": 4040,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NGROK_AUTHTOKEN",
+          "value": "${NGROK_AUTHTOKEN}"
+        }
+      ]
     }
-    EOF
-
-          cat ecs-task-def.json
-
-      - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ecs-task-def.json
-          service: stock-app-service
-          cluster: stock-app-cluster
-          wait-for-service-stability: true
