@@ -48,11 +48,4 @@ jobs:
         echo "GCP_AUTH_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_uri')" >> $GITHUB_ENV
         echo "GCP_TOKEN_URI=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.token_uri')" >> $GITHUB_ENV
         echo "GCP_AUTH_PROVIDER_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.auth_provider_x509_cert_url')" >> $GITHUB_ENV
-        echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq -r '.client_x509_cert_url')" >> $GITHUB_ENV
-
-    - name: Create ECS task definition
-      env:
-        NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-      run: |
-        # ECRイメージURIを再定義
-        IMAGE_UR
+        echo "GCP_CLIENT_X509_CERT_URL=$(echo '${GCP_SERVICE_ACCOUNT_KEY}' | jq
