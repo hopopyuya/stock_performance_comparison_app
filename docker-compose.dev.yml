@@ -4,7 +4,7 @@ services:
   stock_app:
     build:
       context: .
-      dockerfile: Dockerfile.dev  # 開発用Dockerfileを指定
+      dockerfile: Dockerfile.dev
     container_name: stock_app
     ports:
       - "8501:8501"
@@ -12,16 +12,21 @@ services:
       - ./workspace:/app/workspace
     env_file:
       - .env
+    command: streamlit run /app/workspace/app.py
 
   jupyterlab:
-    image: jupyter/base-notebook:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: jupyterlab
     ports:
       - 8888:8888
     volumes:
-      - ./workspace:/home/jovyan/work
+      - ./workspace:/app/workspace
+    env_file:
+      - .env
     environment:
       JUPYTER_ENABLE_LAB: "yes"
       GRANT_SUDO: "yes"
       JUPYTER_TOKEN: ""
-    command: "start-notebook.sh --NotebookApp.token=''"
+    command: "jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.token=''"
