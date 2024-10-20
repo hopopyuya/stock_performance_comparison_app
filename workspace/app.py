@@ -93,7 +93,7 @@ else:
                 # クエリの作成
                 query = """
                     SELECT date, stock_code, close
-                    FROM `dbt-analytics-engineer-435907.dbt_test_stock_dataset.fct_stock_data`
+                    FROM `dbt-analytics-engineer-435907.stock_dataset_mart.fct_stock_data`
                     WHERE stock_code IN UNNEST(@codes)
                       AND date BETWEEN @start_date AND @end_date
                     ORDER BY date ASC
