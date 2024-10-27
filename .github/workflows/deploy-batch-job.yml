@@ -8,6 +8,7 @@ on:
       - 'fetch_stock_data_and_load_bq.py'
       - 'Dockerfile.batch'
       - 'requirements.txt'
+      - 'deploy-batch-job.yml'
 
 jobs:
   build-and-deploy:
