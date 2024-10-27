@@ -115,7 +115,7 @@ def main():
     gcs_bq.delete_from_gcs(combined_file_name)
 
     # CSVファイルのパス
-    STOCK_MAPPING_CSV = '../stock_code_name_mapping.csv'
+    STOCK_MAPPING_CSV = 'stock_code_name_mapping.csv'
 
     # CSVファイルの読み込み
     stock_names_df = pd.read_csv(STOCK_MAPPING_CSV, usecols=['code', 'name'])
