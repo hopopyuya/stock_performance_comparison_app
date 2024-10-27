@@ -67,39 +67,39 @@ jobs:
                 "environment": [
                   {
                     "name": "GCP_PROJECT_ID",
-                    "value": "${{ secrets.GCP_PROJECT_ID }}"
+                    "value": "${{ secrets.BATCH_GCP_PROJECT_ID }}"
                   },
                   {
                     "name": "GCP_PRIVATE_KEY_ID",
-                    "value": "${{ secrets.GCP_PRIVATE_KEY_ID }}"
+                    "value": "${{ secrets.BATCH_GCP_PRIVATE_KEY_ID }}"
                   },
                   {
                     "name": "GCP_PRIVATE_KEY",
-                    "value": "${{ secrets.GCP_PRIVATE_KEY }}"
+                    "value": "${{ secrets.BATCH_GCP_PRIVATE_KEY }}"
                   },
                   {
                     "name": "GCP_CLIENT_EMAIL",
-                    "value": "${{ secrets.GCP_CLIENT_EMAIL }}"
+                    "value": "${{ secrets.BATCH_GCP_CLIENT_EMAIL }}"
                   },
                   {
                     "name": "GCP_CLIENT_ID",
-                    "value": "${{ secrets.GCP_CLIENT_ID }}"
+                    "value": "${{ secrets.BATCH_GCP_CLIENT_ID }}"
                   },
                   {
                     "name": "GCP_AUTH_URI",
-                    "value": "${{ secrets.GCP_AUTH_URI }}"
+                    "value": "${{ secrets.BATCH_GCP_AUTH_URI }}"
                   },
                   {
                     "name": "GCP_TOKEN_URI",
-                    "value": "${{ secrets.GCP_TOKEN_URI }}"
+                    "value": "${{ secrets.BATCH_GCP_TOKEN_URI }}"
                   },
                   {
                     "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
-                    "value": "${{ secrets.GCP_AUTH_PROVIDER_X509_CERT_URL }}"
+                    "value": "${{ secrets.BATCH_GCP_AUTH_PROVIDER_X509_CERT_URL }}"
                   },
                   {
                     "name": "GCP_CLIENT_X509_CERT_URL",
-                    "value": "${{ secrets.GCP_CLIENT_X509_CERT_URL }}"
+                    "value": "${{ secrets.BATCH_GCP_CLIENT_X509_CERT_URL }}"
                   }
                 ],
                 "logConfiguration": {
