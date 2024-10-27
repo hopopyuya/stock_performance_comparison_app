@@ -1,0 +1,24 @@
+# ベースイメージとしてPython 3.9を使用
+FROM python:3.9-slim
+
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# 必要なシステムパッケージのインストール
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    vim \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pythonパッケージのインストール
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# バッチスクリプトと関連ファイルをコピー
+COPY /workspace/script/fetch_stock_data_and_load_bq.py .
+COPY /workspace/stock_code_name_mapping.csv .
+
+# エントリポイントを設定
+ENTRYPOINT ["python", "fetch_stock_data_and_load_bq.py"]

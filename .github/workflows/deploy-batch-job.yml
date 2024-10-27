@@ -1,0 +1,47 @@
+name: Build and Deploy Batch Job
+
+on:
+  push:
+    paths:
+      - 'fetch_stock_data_and_load_bq.py'
+      - 'Dockerfile.batch'
+      - 'requirements.txt'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.BATCH_ECR_REPOSITORY }}
+        run: |
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+          echo "ECR URI: $IMAGE_URI"
+
+          docker build -t "$IMAGE_URI:latest" -f Dockerfile.batch .
+          docker push "$IMAGE_URI:latest"
+
+      - name: Update ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs-task-def.json
+          service: batch-job-service
+          cluster: batch-job-cluster
+          wait-for-service-stability: true
