@@ -17,8 +17,8 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # バッチスクリプトと関連ファイルをコピー
-COPY /workspace/script/fetch_stock_data_and_load_bq.py .
-COPY /workspace/stock_code_name_mapping.csv .
+COPY workspace/script/fetch_stock_data_and_load_bq.py .
+COPY workspace/stock_code_name_mapping.csv .
 
 # エントリポイントを設定
 ENTRYPOINT ["python", "fetch_stock_data_and_load_bq.py"]

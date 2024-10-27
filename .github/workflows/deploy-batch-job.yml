@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'fetch_stock_data_and_load_bq.py'
+      - 'workspace/script/fetch_stock_data_and_load_bq.py'
       - 'Dockerfile.batch'
       - 'requirements.txt'
-      - 'deploy-batch-job.yml'
+      - '.github/workflows/deploy-batch-job.yml'
 
 jobs:
   build-and-deploy:
