@@ -76,7 +76,6 @@ jobs:
 
       - name: Create ECS task definition
         env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
@@ -109,15 +108,10 @@ jobs:
                 "portMappings": [
                   {
                     "containerPort": 80,
-                    "hostPort": 80,
                     "protocol": "tcp"
                   }
                 ],
                 "environment": [
-                  {
-                    "name": "NGROK_AUTHTOKEN",
-                    "value": "${NGROK_AUTHTOKEN}"
-                  },
                   {
                     "name": "GCP_TYPE",
                     "value": "${GCP_TYPE}"
@@ -160,32 +154,6 @@ jobs:
                   }
                 ],
               },
-              {
-                "name": "ngrok",
-                "image": "ngrok/ngrok:latest",
-                "memory": 128,
-                "cpu": 128,
-                "essential": false,
-                "command": [
-                  "http",
-                  "--domain=magnetic-moccasin-fresh.ngrok-free.app",
-                  "localhost:80",
-                  "--log=stdout"
-                ],
-                "portMappings": [
-                  {
-                    "containerPort": 4040,
-                    "hostPort": 4040,
-                    "protocol": "tcp"
-                  }
-                ],
-                "environment": [
-                  {
-                    "name": "NGROK_AUTHTOKEN",
-                    "value": "${NGROK_AUTHTOKEN}"
-                  }
-                ]
-              }
             ],
             "requiresCompatibilities": ["FARGATE"],
             "cpu": "512",

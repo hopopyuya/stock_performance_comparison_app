@@ -29,7 +29,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # ポートの開放
-EXPOSE 80 4040 8888
+EXPOSE 80 8888
 
 # エントリポイントスクリプトを起動
 CMD ["/app/entrypoint.sh"]

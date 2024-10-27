@@ -6,14 +6,14 @@ services:
     container_name: stock-app
     ports:
       - "80:80"
-      - "4040:4040"
+      # - "4040:4040"
     volumes:
       - ./workspace:/app/workspace
       - ./workspace/.streamlit:/app/workspace/.streamlit
-    environment:
-      - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}
-    depends_on:
-      - ngrok
+    # environment:
+    #   - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}
+    # depends_on:
+    #   - ngrok
     command: ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
   jupyterlab:
@@ -29,12 +29,12 @@ services:
       JUPYTER_TOKEN: ""
     command: "start-notebook.sh --NotebookApp.token=''"
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok
-    restart: unless-stopped
-    command: http --domain=magnetic-moccasin-fresh.ngrok-free.app stock-app:80 --log=stdout
-    ports:
-      - "4040:4040"
-    environment:
-      - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}  # GitHub Secretsから参照
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   container_name: ngrok
+  #   restart: unless-stopped
+  #   command: http --domain=magnetic-moccasin-fresh.ngrok-free.app stock-app:80 --log=stdout
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     - NGROK_AUTHTOKEN=${{ secrets.NGROK_AUTHTOKEN }}  # GitHub Secretsから参照
