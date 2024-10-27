@@ -38,6 +38,82 @@ jobs:
           docker build -t "$IMAGE_URI:latest" -f Dockerfile.batch .
           docker push "$IMAGE_URI:latest"
 
+      - name: Create ECS task definition
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.BATCH_ECR_REPOSITORY }}
+        run: |
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
+          echo "ECR IMAGE URI: $IMAGE_URI"
+
+          cat > ecs-task-def.json <<EOF
+          {
+            "family": "batch-job-task",
+            "networkMode": "awsvpc",
+            "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+            "taskRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole",
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "256",
+            "memory": "512",
+            "containerDefinitions": [
+              {
+                "name": "batch-job-container",
+                "image": "${IMAGE_URI}:latest",
+                "essential": true,
+                "environment": [
+                  {
+                    "name": "GCP_PROJECT_ID",
+                    "value": "${{ secrets.GCP_PROJECT_ID }}"
+                  },
+                  {
+                    "name": "GCP_PRIVATE_KEY_ID",
+                    "value": "${{ secrets.GCP_PRIVATE_KEY_ID }}"
+                  },
+                  {
+                    "name": "GCP_PRIVATE_KEY",
+                    "value": "${{ secrets.GCP_PRIVATE_KEY }}"
+                  },
+                  {
+                    "name": "GCP_CLIENT_EMAIL",
+                    "value": "${{ secrets.GCP_CLIENT_EMAIL }}"
+                  },
+                  {
+                    "name": "GCP_CLIENT_ID",
+                    "value": "${{ secrets.GCP_CLIENT_ID }}"
+                  },
+                  {
+                    "name": "GCP_AUTH_URI",
+                    "value": "${{ secrets.GCP_AUTH_URI }}"
+                  },
+                  {
+                    "name": "GCP_TOKEN_URI",
+                    "value": "${{ secrets.GCP_TOKEN_URI }}"
+                  },
+                  {
+                    "name": "GCP_AUTH_PROVIDER_X509_CERT_URL",
+                    "value": "${{ secrets.GCP_AUTH_PROVIDER_X509_CERT_URL }}"
+                  },
+                  {
+                    "name": "GCP_CLIENT_X509_CERT_URL",
+                    "value": "${{ secrets.GCP_CLIENT_X509_CERT_URL }}"
+                  }
+                ],
+                "logConfiguration": {
+                  "logDriver": "awslogs",
+                  "options": {
+                    "awslogs-group": "/ecs/batch-job",
+                    "awslogs-region": "${AWS_REGION}",
+                    "awslogs-stream-prefix": "ecs"
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+
+          ls -al  # ファイルが正しく生成されたか確認
+
       - name: Update ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
