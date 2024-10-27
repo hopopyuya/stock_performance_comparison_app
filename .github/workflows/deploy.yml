@@ -3,7 +3,12 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - main  # main ブランチにプッシュされたときにデプロイ
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'deploy.yml'
+      - 'app.py'
 
 jobs:
   deploy:

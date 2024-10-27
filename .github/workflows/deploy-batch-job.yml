@@ -2,6 +2,8 @@ name: Build and Deploy Batch Job
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'fetch_stock_data_and_load_bq.py'
       - 'Dockerfile.batch'
@@ -102,7 +104,7 @@ jobs:
                 "logConfiguration": {
                   "logDriver": "awslogs",
                   "options": {
-                    "awslogs-group": "/ecs/batch-job",
+                    "awslogs-group": "/ecs/batch-job-task",
                     "awslogs-region": "${AWS_REGION}",
                     "awslogs-stream-prefix": "ecs"
                   }
