@@ -49,6 +49,18 @@ def inject_gtm():
         head_tag = soup.head
         head_tag.insert(0, BeautifulSoup(GTM_HEAD_SCRIPT, "html.parser"))
 
+        # 既存のメタディスクリプションを削除
+        existing_meta_description = soup.find("meta", {"name": "description"})
+        if existing_meta_description:
+            existing_meta_description.decompose()
+
+        # 新しいメタディスクリプションを挿入
+        meta_description = BeautifulSoup(
+            '<meta name="description" content="複数の銘柄の株価パフォーマンスを一目で比較。リアルタイムデータとチャートで投資判断をサポートする、使いやすい株式比較ツール。">', 
+            "html.parser"
+        )
+        head_tag.insert(1, meta_description)
+
         # <body> 開始タグの直後に GTM の noscript を追加
         body_tag = soup.body
         body_tag.insert(0, BeautifulSoup(GTM_BODY_SCRIPT, "html.parser"))
@@ -61,8 +73,9 @@ inject_gtm()
 
 # ページの設定
 st.set_page_config(
-    page_title="stock_performance_comparison",
-    layout="wide",
+    page_title="株価パフォーマンス比較",
+    page_icon="📈",
+    layout="wide"
 )
 
 # タイトルの表示
