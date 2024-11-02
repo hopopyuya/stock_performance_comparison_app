@@ -11,6 +11,53 @@ import japanize_matplotlib
 import datetime as dt
 import json
 import db_dtypes
+from bs4 import BeautifulSoup
+import pathlib
+import shutil
+
+GTM_ID = "google_tag_manager"
+GTM_HEAD_SCRIPT = """
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5Z976GNJ');</script>
+<!-- End Google Tag Manager -->
+"""
+
+GTM_BODY_SCRIPT = """
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5Z976GNJ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+"""
+
+def inject_gtm():
+    # index.html のパスを取得
+    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
+    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
+
+    # <head> 内のなるべく上のほうに GTM スクリプトを挿入
+    if not soup.find(id=GTM_ID):
+        # バックアップを作成
+        bck_index = index_path.with_suffix('.bck')
+        if not bck_index.exists():
+            shutil.copy(index_path, bck_index)
+
+        # <head> タグの最初の部分に GTM のスクリプトを追加
+        head_tag = soup.head
+        head_tag.insert(0, BeautifulSoup(GTM_HEAD_SCRIPT, "html.parser"))
+
+        # <body> 開始タグの直後に GTM の noscript を追加
+        body_tag = soup.body
+        body_tag.insert(0, BeautifulSoup(GTM_BODY_SCRIPT, "html.parser"))
+
+        # 新しい HTML を index.html に書き込み
+        index_path.write_text(str(soup))
+
+# GTM タグを挿入
+inject_gtm()
 
 # ページの設定
 st.set_page_config(
