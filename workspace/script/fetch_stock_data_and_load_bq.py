@@ -1,10 +1,11 @@
 import os
+import time
+import requests
 import pandas as pd
 import yfinance as yf
 from google.cloud import bigquery
 from google.cloud import storage
 import datetime as dt
-import time
 from tqdm import tqdm
 from google.oauth2 import service_account
 
@@ -15,7 +16,6 @@ class GCSBigQueryFacade:
         self.table_name = table_name
         self.bucket_name = bucket_name
 
-        # 環境変数からサービスアカウント情報を取得
         service_account_info = {
             "type": "service_account",
             "project_id": os.environ.get("GCP_PROJECT_ID"),
@@ -29,8 +29,7 @@ class GCSBigQueryFacade:
             "client_x509_cert_url": os.environ.get("GCP_CLIENT_X509_CERT_URL")
         }
         credentials = service_account.Credentials.from_service_account_info(service_account_info)
-
-        # BigQueryクライアントとStorageクライアントの初期化
+        
         self.bq_client = bigquery.Client(credentials=credentials, project=service_account_info["project_id"])
         self.storage_client = storage.Client(credentials=credentials, project=service_account_info["project_id"])
 
@@ -49,13 +48,6 @@ class GCSBigQueryFacade:
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_filename(local_file_path)
         tqdm.write(f"File {local_file_path} uploaded to {destination_blob_name}.")
-
-    def delete_from_gcs(self, file_name):
-        bucket = self.storage_client.bucket(self.bucket_name)
-        blob = bucket.blob(file_name)
-        if blob.exists():
-            blob.delete()
-            tqdm.write(f"Deleted {file_name} from GCS.")
 
     def load_data_to_bigquery(self, source_uri):
         dataset_ref = self.bq_client.dataset(self.dataset_name)
@@ -80,63 +72,48 @@ def suppress_yfinance_warnings():
     yf_logger = logging.getLogger("yfinance")
     yf_logger.setLevel(logging.ERROR)
 
+
 def main():
     suppress_yfinance_warnings()
-
-    # BigQueryとGCSの設定
+    
     PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
     DATASET_NAME = 'stock_dataset'
     BUCKET_NAME = 'stock-data-bucket_hopop'
     TABLE_NAME = 'stock_data'
-
-    # GCS & BigQuery操作のためのファサードを初期化
     gcs_bq = GCSBigQueryFacade(PROJECT_ID, DATASET_NAME, TABLE_NAME, BUCKET_NAME)
-
-    # BigQueryから最大の日付を取得
-    max_date = gcs_bq.get_max_date_from_bq()
     
-    if max_date:
-        # max_dateを文字列からdatetime型に変換
-        max_date = pd.to_datetime(max_date).date()
-        START_DATE = max_date + dt.timedelta(days=1)
-    else:
-        # データがない場合、デフォルトの開始日
-        START_DATE = dt.date(2024, 1, 1)
-
+    max_date = gcs_bq.get_max_date_from_bq()
+    max_date = pd.to_datetime(max_date).date()
+    START_DATE = max_date + dt.timedelta(days=1)
     END_DATE = dt.date.today()
-
-    # START_DATE == END_DATEの場合、処理をスキップ
+    
     if START_DATE >= END_DATE:
         tqdm.write("最新データが既に存在します。新しいデータはありません。")
         return
-
-    # GCS上のファイルが存在するかを確認し、削除
-    combined_file_name = "combined_stock_data.parquet"
-    gcs_bq.delete_from_gcs(combined_file_name)
-
-    # CSVファイルのパス
-    STOCK_MAPPING_CSV = 'stock_code_name_mapping.csv'
-
-    # CSVファイルの読み込み
-    stock_names_df = pd.read_csv(STOCK_MAPPING_CSV, usecols=['code', 'name'])
-
-    # すべての銘柄のデータを結合するためのデータフレームを準備
+    
+    url = "https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xls"
+    r = requests.get(url)
+    with open('data_j.xls', 'wb') as output:
+        output.write(r.content)
+    stocklist = pd.read_excel("./data_j.xls")
+    stocklist = stocklist[stocklist["市場・商品区分"].isin(["プライム（内国株式）", "グロース（内国株式）", "スタンダード（内国株式）"])]
+    stock_names_df = stocklist[['コード', '銘柄名']]
+    print(f'{START_DATE} ~ {END_DATE}')
+    
+    
     combined_df = pd.DataFrame()
-
     # tqdmを使用して進捗を可視化（バーを最上部に固定）
     progress_bar = tqdm(stock_names_df.iterrows(), total=len(stock_names_df), ncols=100, leave=True, position=0)
-
+    
     for index, row in progress_bar:
-        stock_code = str(row['code']).strip()
-        ticker = f"{stock_code}.T"  # 東証の場合、ティッカーは通常「.T」が付加されます
+        stock_code = str(row['コード']).strip()
+        ticker = f"{stock_code}.T"
         
-        # 株価データの取得
         df = yf.download(ticker, start=START_DATE, end=END_DATE)
-
+    
         if df.empty:
             tqdm.write(f"No data found for {ticker}. Skipping...")
         else:
-            # データフレームの前処理
             df.reset_index(inplace=True)
             df = df.rename(columns={
                 'Date': 'Date',
@@ -149,18 +126,15 @@ def main():
             })
             df['Stock_Code'] = stock_code
     
-            # 必要なカラムのみを選択
             df = df[['Date', 'Stock_Code', 'Open', 'High', 'Low', 'Close', 'Adj_Close', 'Volume']]
             df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
             
-            # データを結合
             combined_df = pd.concat([combined_df, df], ignore_index=True)
         
-        # Yahoo Finance APIの制限を避けるために1秒スリープ
         time.sleep(1)
     
     progress_bar.close()
-
+    
     if not combined_df.empty:
         # すべての銘柄データを一度にまとめてParquetファイルとして保存
         local_file_name = f"combined_stock_data.parquet"

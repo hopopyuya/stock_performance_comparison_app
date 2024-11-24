@@ -11,3 +11,4 @@ google-cloud-storage
 db-dtypes
 tqdm
 beautifulsoup4
+xlrd
